@@ -26,42 +26,42 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // publish http request
-        Alamofire.request(weatherApiUrl).responseJSON {
-            (response: DataResponse<Any>) in
+        Alamofire.request(weatherApiUrl).responseJSON(completionHandler: didRequest)
+    }
+    
+    func didRequest(response: DataResponse<Any>) {
+
+        // error handling: 通信エラーの確認
+        if response.result.isFailure == true {
+            // show alert
+            self.simpleAlert(title: "通信エラー", message: "通信に失敗しました")
+            return
+        }
+        
+        // error handling: 通信結果のチェック
+        guard let val = response.result.value as? [String: Any] else {
+            self.simpleAlert(title: "通信エラー", message: "通信結果がJSONではありませんでした")
+            return
+        }
+        
+        // responseJSONを使うと辞書形式でも扱えますが、今回はより簡単に扱うためにSwiftyJSONを利用します。
+        let json = JSON(val)
+        
+        // タイトル部分(都市名)の表示
+        self.titleLabel.text = json["title"].stringValue
+        
+        // 天気の情報
+        if let forecasts = json["forecasts"].array {
             
-            // error handling: 通信エラーの確認
-            if response.result.isFailure == true {
-                // show alert
-                self.simpleAlert(title: "通信エラー", message: "通信に失敗しました")
-                return
-            }
-            
-            // error handling: 通信結果のチェック
-            guard let val = response.result.value as? [String: Any] else {
-                self.simpleAlert(title: "通信エラー", message: "通信結果がJSONではありませんでした")
-                return
-            }
-            
-            // responseJSONを使うと辞書形式でも扱えますが、今回はより簡単に扱うためにSwiftyJSONを利用します。
-            let json = JSON(val)
-            
-            // タイトル部分(都市名)の表示
-            self.titleLabel.text = json["title"].stringValue
-            
-            // 天気の情報
-            if let forecasts = json["forecasts"].array {
-                
-                // 要素数分だけ、loop
-                for i in 0 ..< forecasts.count {
-                    // 日付を表示
-                    self.dateLabelCollection[i].text = forecasts[i]["dateLabel"].stringValue
-                    // 天候を表示
-                    self.weatherLabelCollection[i].text = forecasts[i]["telop"].stringValue
-                    // 温度を表示
-                    self.temperatureLabelCollection[i].text = self.generateTemperatureText(forecasts[i]["temperature"])
-                    self.weatherImageCollection[i].sd_setImage(with: URL(string: forecasts[i]["image"]["url"].stringValue))
-                }
+            // 要素数分だけ、loop
+            for i in 0 ..< forecasts.count {
+                // 日付を表示
+                self.dateLabelCollection[i].text = forecasts[i]["dateLabel"].stringValue
+                // 天候を表示
+                self.weatherLabelCollection[i].text = forecasts[i]["telop"].stringValue
+                // 温度を表示
+                self.temperatureLabelCollection[i].text = self.generateTemperatureText(forecasts[i]["temperature"])
+                self.weatherImageCollection[i].sd_setImage(with: URL(string: forecasts[i]["image"]["url"].stringValue))
             }
         }
     }
